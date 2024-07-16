@@ -1,33 +1,34 @@
 pipeline {
     agent any
+    environment {
+        NVD_API_KEY = credentials('nvd-api-key') // Ensure the correct credential ID
+    }
     stages {
         stage('Build') { 
             steps {
                 sh 'npm install' 
             }
         }
-
         stage('Test') {
             steps {
                 sh './jenkins/scripts/test.sh'
             }
         }
-
         stage('OWASP Dependency-Check Vulnerabilities') {
-            environment {
-                NVD_API_KEY = credentials('nvd-api-key') // Use the ID of your Jenkins secret text credential
-            }
             steps {
-                dependencyCheck additionalArguments: ''' 
-                            -o './'
-                            -s './'
-                            -f 'ALL' 
-                            --prettyPrint''', odcInstallation: 'OWASP Dependency-Check Vulnerabilities'
-                
+                script {
+                    def additionalArgs = """
+                        -o './'
+                        -s './'
+                        -f 'ALL'
+                        --prettyPrint
+                        --nvdApiKey ${env.NVD_API_KEY}
+                    """
+                    dependencyCheck additionalArguments: additionalArgs, odcInstallation: 'OWASP Dependency-Check Vulnerabilities'
+                }
                 dependencyCheckPublisher pattern: 'dependency-check-report.xml'
             }
         }
-        
         stage('Deliver') {
             steps {
                 sh './jenkins/scripts/deliver.sh'
