@@ -14,6 +14,9 @@ pipeline {
         }
 
         stage('OWASP Dependency-Check Vulnerabilities') {
+            environment {
+                NVD_API_KEY = credentials('nvd-api-key') // Use the ID of your Jenkins secret text credential
+            }
             steps {
                 dependencyCheck additionalArguments: ''' 
                             -o './'
